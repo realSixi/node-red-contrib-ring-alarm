@@ -1,0 +1,230 @@
+<script type='text/javascript'>
+    RED.nodes.registerType('Device Listener', {
+        category: 'Ring Alarm',
+        color: '#a9d2f8',
+        icon: 'bridge.svg',
+        defaults: {
+            name: { value: '' },
+            config: { value: '', type: 'ring-config' },
+
+        },
+
+        inputs: 0,
+        outputs: 1,
+
+        label: function() {
+            return this.name || 'Device Listener';
+        },
+    });
+    RED.nodes.registerType('Alarm Mode Listener', {
+        category: 'Ring Alarm',
+        color: '#a9d2f8',
+        icon: 'font-awesome/fa-cogs',
+        defaults: {
+            name: { value: '' },
+            config: { value: '', type: 'ring-config' },
+        },
+        inputs: 0,
+        outputs: 1,
+
+        label: function() {
+            return this.name || 'Alarm Mode Listener';
+        },
+    });
+
+    RED.nodes.registerType('Camera Motion', {
+        category: 'Ring Alarm',
+        icon: 'font-awesome/fa-video-camera',
+        color: '#a9d2f8',
+        defaults: {
+            name: { value: '' },
+            config: { value: '', type: 'ring-config' },
+        },
+        inputs: 0,
+        outputs: 1,
+        label: function() {
+            return this.name || 'Camera Motion';
+        },
+    });
+
+    RED.nodes.registerType('Alarm Status', {
+        category: 'Ring Alarm',
+        icon: 'font-awesome/fa-bell',
+        color: '#a9d2f8',
+        defaults: {
+            name: { value: '' },
+            config: { value: '', type: 'ring-config' },
+            locationId: { value: '' },
+        },
+        inputs: 0,
+        outputs: 1,
+        label: function() {
+            return this.name || 'Alarm Status';
+        },
+    });
+
+    RED.nodes.registerType('Alarm Mode', {
+        category: 'Ring Alarm',
+        icon: 'font-awesome/fa-bell',
+        color: '#a9d2f8',
+        defaults: {
+            name: { value: '' },
+            config: { value: '', type: 'ring-config' },
+            locationId: { value: '' },
+            bypass: { value: 'true', required: true },
+        },
+        inputs: 1,
+        outputs: 0,
+        label: function() {
+            return this.name || 'Alarm Mode';
+        },
+    });
+
+
+    RED.nodes.registerType('Camera', {
+        category: 'Ring Alarm',
+        color: '#a9d2f8',
+        icon: 'font-awesome/fa-file-video-o',
+        align: 'right',
+        defaults: {
+            name: { value: '' },
+            config: { value: '', type: 'ring-config' },
+            imagetype: { value: 'photo' },
+        },
+        inputs: 1,
+        outputs: 1,
+        label: function() {
+            return this.name || 'Camera';
+        },
+        oneditprepare: function() {
+            $('#node-input-imagetype').typedInput({
+                types: [
+                    {
+                        value: 'photo',
+                        options: [
+                            { value: 'video', label: 'Video' },
+                            { value: 'photo', label: 'Photo' },
+                        ],
+                    },
+                ],
+            });
+        },
+    });
+
+    RED.nodes.registerType('ring-config', {
+        category: 'config',
+        color: '#a9d2f8',
+        defaults: {
+            name: { value: '' },
+        },
+        credentials: {
+            initialToken: { type: 'text' },
+            token: { type: 'text' },
+        },
+        label: function() {
+            return this.name || 'Ring Alarm Config';
+        },
+    });
+</script>
+
+<script type='text/html' data-template-name='ring-config'>
+    <div class='form-row'>
+        <label for='node-config-input-name'><i class='fa fa-bookmark'></i> Configuration Name</label>
+        <input type='text' id='node-config-input-name'>
+    </div>
+    <div class='form-row'>
+        <label for='node-config-input-initialToken'><i class='fa fa-bookmark'></i> Ring.com Refresh</label>
+        <input type='text' id='node-config-input-initialToken'>
+    </div>
+    <!--    <div class="form-row">-->
+    <!--        <label for="node-config-input-token"><i class="fa fa-bookmark"></i> Token</label>-->
+    <!--        <input type="text" id="node-config-input-token">-->
+    <!--    </div>-->
+</script>
+
+<script type='text/html' data-template-name='Device Listener'>
+    <div class='form-row'>
+        <label for='node-input-name'><i class='fa fa-tag'></i> Name</label>
+        <input type='text' id='node-input-name' placeholder='Name'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-config'><i class='fa fa-tag'></i> Ring Config</label>
+        <input type='text' id='node-input-config' placeholder='Config'>
+    </div>
+</script>
+
+<script type='text/html' data-template-name='Camera Motion'>
+    <div class='form-row'>
+        <label for='node-input-name'><i class='fa fa-tag'></i> Name</label>
+        <input type='text' id='node-input-name' placeholder='Name'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-config'><i class='fa fa-tag'></i> Ring Config</label>
+        <input type='text' id='node-input-config' placeholder='Config'>
+    </div>
+</script>
+
+<script type='text/html' data-template-name='Alarm Status'>
+    <div class='form-row'>
+        <label for='node-input-name'><i class='fa fa-tag'></i> Name</label>
+        <input type='text' id='node-input-name' placeholder='Name'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-config'><i class='fa fa-tag'></i> Ring Config</label>
+        <input type='text' id='node-input-config' placeholder='Config'>
+    </div>
+</script>
+
+
+<script type='text/html' data-template-name='Camera'>
+    <div class='form-row'>
+        <label for='node-input-name'><i class='fa fa-tag'></i> Name</label>
+        <input type='text' id='node-input-name' placeholder='Name'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-config'><i class='fa fa-tag'></i> Ring Config</label>
+        <input type='text' id='node-input-config' placeholder='Config'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-imagetype'><i class='fa fa-tag'></i> Type</label>
+        <input type='text' id='node-input-imagetype' placeholder='Typ'>
+    </div>
+</script>
+
+<script type='text/html' data-template-name='Alarm Mode Listener'>
+    <div class='form-row'>
+        <label for='node-input-name'><i class='fa fa-tag'></i> Name</label>
+        <input type='text' id='node-input-name' placeholder='Name'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-config'><i class='fa fa-tag'></i> Ring Config</label>
+        <input type='text' id='node-input-config' placeholder='Config'>
+    </div>
+</script>
+
+<script type='text/html' data-template-name='Alarm Mode'>
+    <div class='form-row'>
+        <label for='node-input-name'><i class='fa fa-tag'></i> Name</label>
+        <input type='text' id='node-input-name' placeholder='Name'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-config'><i class='fa fa-tag'></i> Ring Config</label>
+        <input type='text' id='node-input-config' placeholder='Config'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-name'><i class='fa fa-tag'></i> LocationId Filter</label>
+        <input type='text' id='node-input-locationId' placeholder='12345678-aaaa-bbbb-cccc-ddddddddddd'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-bypass'><i class='fa fa-tag'></i> Bypass faulting sensors</label>
+        <select type='text' id='node-input-bypass' style='display: inline-block; vertical-align: middle; width:70%;'>
+            <option value='true'>true</option>
+            <option value='false'>false</option>
+        </select>
+    </div>
+</script>
+
+
+<script type='text/html' data-help-name='ring-alarm'>
+    <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>

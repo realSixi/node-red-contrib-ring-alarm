@@ -1,0 +1,36 @@
+{
+  "name": "node-red-contrib-ring-alarm",
+  "version": "1.0.0",
+  "repository": {
+    "url": ""
+  },
+  "main": "./dist/ring-alarm.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "npm run watch",
+    "build": "npm run tslint && npm run build-ts",
+    "watch-node": "nodemon --watch dist/ --exec \"node-red\"",
+    "watch": "npx copyfiles public/* dist -f && npx concurrently -k -p  \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
+    "build-ts": "tsc --declaration",
+    "watch-ts": "tsc -w"
+  },
+  "node-red": {
+    "nodes": {
+      "ring-alarm": "dist/ring-alarm.js"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.5",
+    "@types/node-red": "^1.2.1",
+    "concurrently": "^7.2.2",
+    "copyfiles": "^2.4.1",
+    "node-red": "^3.0.0",
+    "nodemon": "^2.0.19",
+    "prettier": "^2.7.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "ring-client-api": "^11.0.7"
+  }
+}

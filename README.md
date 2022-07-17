@@ -15,7 +15,7 @@ This projects adds the following nodes to Node-RED
 Sends a message, if a device changes - either because it;s `faulted` (= triggered) or because it's `tamperStatus` changed.
 
 *Example Message*
-```json
+```javascript
 {
   locationId: "a44a1234-66a9-4a25-b1ca-dbff7123456",
   adapterType: "zwave",

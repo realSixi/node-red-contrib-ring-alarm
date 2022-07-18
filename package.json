@@ -12,6 +12,9 @@
     "ring alarm",
     "ring camera"
   ],
+  "engines": {
+    "node": ">=12.0.0"
+  },
   "files": ["dist/**", "examples/**"],
   "scripts": {
     "start": "npm run watch",
@@ -23,6 +26,7 @@
     "pre-publish": "npx copyfiles public/* dist -f"
   },
   "node-red": {
+    "version": ">=2.0.0",
     "nodes": {
       "ring-alarm": "dist/ring-alarm.js"
     }

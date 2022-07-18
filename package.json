@@ -1,14 +1,20 @@
 {
   "name": "node-red-contrib-ring-alarm",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
-    "url": "https://github.com/realSixi/node-red-contrib-ring-alarm"
+    "type": "git",
+    "url": "git+https://github.com/realSixi/node-red-contrib-ring-alarm.git"
   },
   "main": "./dist/ring-alarm.js",
   "license": "MIT",
+  "keywords": [
+    "node-red",
+    "ring alarm",
+    "ring camera"
+  ],
   "scripts": {
     "start": "npm run watch",
-    "build": "npm run tslint && npm run build-ts",
+    "build": "npm run build-ts",
     "watch-node": "nodemon --watch dist/ --exec \"node-red\"",
     "watch": "npx copyfiles public/* dist -f && npx concurrently -k -p  \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
     "build-ts": "tsc --declaration",
@@ -22,6 +28,7 @@
   "devDependencies": {
     "@types/node": "^18.0.5",
     "@types/node-red": "^1.2.1",
+    "@types/ws": "^8.5.3",
     "concurrently": "^7.2.2",
     "copyfiles": "^2.4.1",
     "node-red": "^3.0.0",
@@ -32,5 +39,11 @@
   },
   "dependencies": {
     "ring-client-api": "^11.0.7"
-  }
+  },
+  "description": "Unofficial Node-Red nodes to interact with Ring Alarm System and Ring Cameras.",
+  "bugs": {
+    "url": "https://github.com/realSixi/node-red-contrib-ring-alarm/issues"
+  },
+  "homepage": "https://github.com/realSixi/node-red-contrib-ring-alarm#readme",
+  "author": "realSixi"
 }

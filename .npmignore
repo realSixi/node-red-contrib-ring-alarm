@@ -1,0 +1,4 @@
+*.iml
+.DS_STORE
+.git
+.npmrc

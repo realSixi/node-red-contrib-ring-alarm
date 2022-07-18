@@ -10,7 +10,6 @@
     "baseUrl": ".",
     "types": [
       "node",
-      "jest"
     ],
     "paths": {
       "*": [

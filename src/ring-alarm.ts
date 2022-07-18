@@ -29,13 +29,14 @@ const init = (RED: NodeAPI) => {
 
             if (getToken()) {
                 this.api = new RingApi({ refreshToken: getToken() });
-                this.api.onRefreshTokenUpdated.subscribe(tokenUpdate => {
+                let subscription = this.api.onRefreshTokenUpdated.subscribe(tokenUpdate => {
                     console.log('Refreshed Token', tokenUpdate);
                     updateToken(tokenUpdate.newRefreshToken);
                 });
 
 
                 this.on('close', () => {
+                    subscription.unsubscribe();
                     this.api.disconnect();
                 });
             } else {
@@ -62,7 +63,7 @@ const init = (RED: NodeAPI) => {
                     locations.forEach(location => {
                         location.getDevices().then();
 
-                        location.onDeviceDataUpdate.subscribe(deviceUpdate => {
+                        let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
                             if (deviceUpdate.deviceType === RingDeviceType.SecurityPanel && deviceUpdate.mode) {
                                 this.send({
                                     topic: `ring/${location.id}/security-panel/${deviceUpdate.zid}/security-mode`,
@@ -70,6 +71,10 @@ const init = (RED: NodeAPI) => {
                                 });
 
                             }
+                        });
+
+                        this.on('close', () => {
+                            subscription.unsubscribe();
                         });
                     });
                     this.status({
@@ -100,7 +105,7 @@ const init = (RED: NodeAPI) => {
                 api.getLocations().then(locations => {
                     locations.forEach(location => {
                         location.cameras.forEach(cam => {
-                            cam.onMotionDetected.subscribe(motion => {
+                            let subscription = cam.onMotionDetected.subscribe(motion => {
                                 this.send({
                                     topic: `ring/${location.id}/camera/${cam.id}/motion`,
                                     payload: {
@@ -108,6 +113,9 @@ const init = (RED: NodeAPI) => {
                                         motion: motion,
                                     },
                                 });
+                            });
+                            this.on('close', () => {
+                                subscription.unsubscribe();
                             });
                         });
                     });
@@ -144,7 +152,7 @@ const init = (RED: NodeAPI) => {
                             location.getDevices().then(devices => {
                             }).catch(e => RED.log.error(e));
 
-                            location.onDeviceDataUpdate.subscribe(deviceUpdate => {
+                            let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
                                 if (deviceUpdate.faulted !== undefined || deviceUpdate.tamperStatus) {
                                     this.send({
                                         topic: `ring/${location.id}/device/${deviceUpdate.zid}`,
@@ -157,8 +165,9 @@ const init = (RED: NodeAPI) => {
                                     console.log('other device update', deviceUpdate);
                                 }
                             });
-
-
+                            this.on('close', () => {
+                                subscription.unsubscribe();
+                            });
                         });
 
                         this.status({
@@ -198,9 +207,9 @@ const init = (RED: NodeAPI) => {
 
                         api.getCameras().then(cameras => {
                             cameras.forEach(camera => {
-                                camera.onMotionDetected.subscribe(msg => {
-                                    console.log('Cam motion detected');
-                                });
+                                // camera.onMotionDetected.subscribe(msg => {
+                                //     console.log('Cam motion detected');
+                                // });
 
                                 if (config.imagetype === 'video') {
 
@@ -314,7 +323,7 @@ const init = (RED: NodeAPI) => {
                             }).catch(e => {
                                 RED.log.error(e);
                             });
-                            location.onDeviceDataUpdate.subscribe(deviceData => {
+                            let subscription = location.onDeviceDataUpdate.subscribe(deviceData => {
                                 if (deviceData.deviceType === 'security-panel') {
                                     location.getAlarmMode().then(mode => {
                                         let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
@@ -326,6 +335,10 @@ const init = (RED: NodeAPI) => {
                                         RED.log.error(e);
                                     });
                                 }
+                            });
+
+                            this.on('close', () => {
+                                subscription.unsubscribe();
                             });
 
 
@@ -441,7 +454,12 @@ const init = (RED: NodeAPI) => {
                                         },
                                     });
                                 }
-                            }));
+                            }))
+                            .then(subscription => {
+                                this.on('close', () => {
+                                    subscription.unsubscribe();
+                                });
+                            });
 
                         this.status({
                             fill: 'green',

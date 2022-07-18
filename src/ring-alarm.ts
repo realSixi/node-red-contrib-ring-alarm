@@ -33,10 +33,14 @@ const init = (RED: NodeAPI) => {
                     console.log('Refreshed Token', tokenUpdate);
                     updateToken(tokenUpdate.newRefreshToken);
                 });
+
+
+                this.on('close', () => {
+                    this.api.disconnect();
+                });
             } else {
                 RED.log.error('No Token!');
             }
-
         }
 
         RED.nodes.registerType('ring-config', RingConfigNode, {
@@ -128,6 +132,7 @@ const init = (RED: NodeAPI) => {
         RED.nodes.registerType('Device Listener', function(this: nodeRed.Node, config: { config: string } & NodeDef) {
             RED.nodes.createNode(this, config);
 
+
             let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
             if (configNode && configNode.api) {
                 const api = configNode.api;
@@ -152,6 +157,8 @@ const init = (RED: NodeAPI) => {
                                     console.log('other device update', deviceUpdate);
                                 }
                             });
+
+
                         });
 
                         this.status({

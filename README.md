@@ -1,5 +1,11 @@
 # node-red-contrib-ring-alarm
 
+[![npm](https://badgen.net/npm/v/@realsixi/node-red-contrib-ring-alarm)](https://www.npmjs.com/package/@realsixi/node-red-contrib-ring-alarm)
+[![npm](https://badgen.net/npm/dt/@realsixi/node-red-contrib-ring-alarm)](https://www.npmjs.com/package/@realsixi/node-red-contrib-ring-alarm)
+[![npm](https://badgen.net/badge/NodeRED/published/red)](https://flows.nodered.org/node/@realsixi/node-red-contrib-ring-alarm)
+
+
+
 Unofficial [Node-RED](https://nodered.org/) nodes to interact with [Ring](https://ring.com) Alarm System and Ring Cameras.
 
 This project uses the great [ring-client-api](https://github.com/dgreif/ring) to interact with the Ring System.

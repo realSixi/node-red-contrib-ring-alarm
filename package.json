@@ -1,6 +1,6 @@
 {
   "name": "@realsixi/node-red-contrib-ring-alarm",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/realSixi/node-red-contrib-ring-alarm.git"
@@ -20,7 +20,7 @@
     "watch": "npx copyfiles public/* dist -f && npx concurrently -k -p  \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
     "build-ts": "tsc --declaration",
     "watch-ts": "tsc -w",
-    "publish": "npm publish --access public"
+    "pre-publish": "npx copyfiles public/* dist -f"
   },
   "node-red": {
     "nodes": {

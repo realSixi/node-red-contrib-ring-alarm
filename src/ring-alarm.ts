@@ -94,19 +94,6 @@ const init = (RED: NodeAPI) => {
         if (configNode && configNode.api) {
             const api = configNode.api;
 
-            api.getCameras().then(cameras => {
-                cameras.forEach(cam => {
-                    // console.log('Subscribing for cam', cam);
-
-                    cam.onMotionStarted.subscribe(motionStarted => {
-                        // console.log('motionStarted', motionStarted, cam);
-                    });
-                    cam.onMotionDetected.subscribe(motion => {
-                        // console.log('onMotionDetected', motion, cam);
-                    });
-                });
-            });
-
             api.getLocations().then(locations => {
                 locations.forEach(location => {
                     location.cameras.forEach(cam => {
@@ -216,39 +203,38 @@ const init = (RED: NodeAPI) => {
                                     fill: 'green',
                                 });
 
-                                // camera.onNewNotification.subscribe(notification => {
-                                //     console.log('not', notification);
-                                // });
 
                                 const filename = `/tmp/ring-video-${(new Date().getTime())}.mp4`;
 
                                 camera.recordToFile(filename, 10)
                                     .then(record => {
                                         console.log('Record DONE!', record);
+                                        let data = fs.readFileSync(filename);
+                                        send({
+                                            payload: {
+                                                type: 'video',
+                                                buffer: data,
+                                            },
+                                        });
 
-                                        try {
-                                            let data = fs.readFileSync(filename);
-                                            send({
-                                                payload: {
-                                                    type: 'video',
-                                                    buffer: data,
-                                                },
-                                            });
+                                        fs.unlink(filename, () => {
+                                            console.log('UNlink done!', filename);
+                                        });
 
-                                            fs.unlink(filename, () => {
-                                                console.log('UNlink done!', filename);
-                                            });
+                                        this.status({
+                                            text: 'ready',
+                                            fill: 'green',
+                                        });
 
-                                            this.status({
-                                                text: 'ready',
-                                                fill: 'green',
-                                            });
+                                        done();
 
-                                            done();
-                                        } catch (e) {
-                                            console.log('read file error');
-                                        }
+                                    }).catch(e => {
+                                    this.status({
+                                        text: e.message,
+                                        fill: 'red',
                                     });
+                                    done();
+                                });
                             } else if (config.imagetype === 'photo') {
                                 this.status({
                                     text: 'taking snapshot',
@@ -270,6 +256,12 @@ const init = (RED: NodeAPI) => {
                                     this.status({
                                         text: 'ready',
                                         fill: 'green',
+                                    });
+                                    done();
+                                }).catch(e => {
+                                    this.status({
+                                        text: e.message,
+                                        fill: 'red',
                                     });
                                     done();
                                 });
@@ -362,6 +354,7 @@ const init = (RED: NodeAPI) => {
 
 
                         switch (payload) {
+                            case 'some':
                             case 'home': {
                                 location.armHome(devicesToIgnore).then(res => {
                                     done();
@@ -370,6 +363,7 @@ const init = (RED: NodeAPI) => {
                                 });
                                 break;
                             }
+                            case 'all':
                             case 'arm': {
                                 location.armAway(devicesToIgnore).then(res => {
                                     done();
@@ -378,6 +372,7 @@ const init = (RED: NodeAPI) => {
                                 });
                                 break;
                             }
+                            case 'none':
                             case 'disarm' : {
                                 location.disarm().then(res => {
                                     done();
@@ -388,7 +383,6 @@ const init = (RED: NodeAPI) => {
                             }
                             default: {
                                 RED.log.error(`Invalid Mode: ${msg.payload}`);
-
                                 break;
                             }
                         }

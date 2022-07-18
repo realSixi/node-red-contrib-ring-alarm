@@ -12,19 +12,19 @@ This projects adds the following nodes to Node-RED
 
 ### Device Listener
 
-Sends a message, if a device changes - either because it;s `faulted` (= triggered) or because it's `tamperStatus` changed.
+Sends a message, if a device changes - either because it's `faulted` (= triggered) or because it's `tamperStatus` changed.
 
 *Example Message*
 ```javascript
 {
-  locationId: "a44a1234-66a9-4a25-b1ca-dbff7123456",
-  adapterType: "zwave",
-  catalogId: "3ec71234-735c-4a07-b718-44475812345",
-  deviceType: "sensor.contact",
-  lastCommTime: 1658095897290,
-  lastUpdate: 1658095897342,
-  zid: "0ef01234-91c2-4a43-ba2d-ebc5ad123456",
-  faulted: true
+  "locationId": "a44a1234-66a9-4a25-b1ca-dbff7123456",
+  "adapterType": "zwave",
+  "catalogId": "3ec71234-735c-4a07-b718-44475812345",
+  "deviceType": "sensor.contact",
+  "lastCommTime": 1658095897290,
+  "lastUpdate": 1658095897342,
+  "zid": "0ef01234-91c2-4a43-ba2d-ebc5ad123456",
+  "faulted": true
 }
 ```
 
@@ -52,6 +52,7 @@ TODO: Test with real alarms
 ### Alarm Mode
 
 Sets the alarm mode for a configured `locationId` by sending `home`, `arm` or `disarm` as payload. You can find your `locationId` e.g. in the *Device Listener* Messages.
+Also accepts `some`, `none` and `all`.
 
 Node can be configured to bypass faulting sensors, like the app does.
 

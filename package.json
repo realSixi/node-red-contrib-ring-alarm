@@ -12,6 +12,7 @@
     "ring alarm",
     "ring camera"
   ],
+  "files": ["dist/**"],
   "scripts": {
     "start": "npm run watch",
     "build": "npm run build-ts",

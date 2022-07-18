@@ -1,0 +1,53 @@
+[
+  {
+    "id": "2dc119f0ec757090",
+    "type": "Alarm Status",
+    "z": "6eeefda59821e437",
+    "name": "",
+    "config": "df565e0433b24184",
+    "locationId": "",
+    "x": 150,
+    "y": 480,
+    "wires": [
+      [
+        "b638af0192001e9d"
+      ]
+    ]
+  },
+  {
+    "id": "906cf3913fd17ca6",
+    "type": "Alarm Mode Listener",
+    "z": "6eeefda59821e437",
+    "name": "",
+    "config": "df565e0433b24184",
+    "x": 170,
+    "y": 400,
+    "wires": [
+      [
+        "b638af0192001e9d"
+      ]
+    ]
+  },
+  {
+    "id": "b638af0192001e9d",
+    "type": "debug",
+    "z": "6eeefda59821e437",
+    "name": "debug",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 390,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "df565e0433b24184",
+    "type": "ring-config",
+    "name": "home"
+  }
+]

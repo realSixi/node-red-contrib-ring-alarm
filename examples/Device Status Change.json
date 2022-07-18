@@ -1,0 +1,113 @@
+[
+  {
+    "id": "a07d84da0c730af0",
+    "type": "Device Listener",
+    "z": "6eeefda59821e437",
+    "name": "",
+    "config": "df565e0433b24184",
+    "x": 160,
+    "y": 240,
+    "wires": [
+      [
+        "aa7cb566b4db061b",
+        "2da2bc76789f10e0",
+        "7ccf51217d897c10"
+      ]
+    ]
+  },
+  {
+    "id": "aa7cb566b4db061b",
+    "type": "switch",
+    "z": "6eeefda59821e437",
+    "name": "isFaulted",
+    "property": "payload.faulted",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "true"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 1,
+    "x": 380,
+    "y": 240,
+    "wires": [
+      [
+        "09b723bdaa9e71a5"
+      ]
+    ]
+  },
+  {
+    "id": "2da2bc76789f10e0",
+    "type": "switch",
+    "z": "6eeefda59821e437",
+    "name": "isTampered",
+    "property": "payload.tamperStatus",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "eq",
+        "v": "\"tamper\"",
+        "vt": "str"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 1,
+    "x": 390,
+    "y": 280,
+    "wires": [
+      [
+        "09b723bdaa9e71a5"
+      ]
+    ]
+  },
+  {
+    "id": "7ccf51217d897c10",
+    "type": "switch",
+    "z": "6eeefda59821e437",
+    "name": "isNotTampered",
+    "property": "payload.tamperStatus",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "eq",
+        "v": "\"ok\"",
+        "vt": "str"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 1,
+    "x": 400,
+    "y": 320,
+    "wires": [
+      [
+        "09b723bdaa9e71a5"
+      ]
+    ]
+  },
+  {
+    "id": "09b723bdaa9e71a5",
+    "type": "debug",
+    "z": "6eeefda59821e437",
+    "name": "debug",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 610,
+    "y": 280,
+    "wires": []
+  },
+  {
+    "id": "df565e0433b24184",
+    "type": "ring-config",
+    "name": "home"
+  }
+]

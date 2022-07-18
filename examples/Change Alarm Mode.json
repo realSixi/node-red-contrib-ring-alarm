@@ -1,0 +1,188 @@
+[
+  {
+    "id": "80c05a3763475921",
+    "type": "Alarm Mode",
+    "z": "6eeefda59821e437",
+    "name": "",
+    "config": "df565e0433b24184",
+    "locationId": "a44a5411-66b9-4225-b1aa-dbff780afef3",
+    "bypass": "true",
+    "x": 530,
+    "y": 1000,
+    "wires": []
+  },
+  {
+    "id": "d9f7eed930445486",
+    "type": "inject",
+    "z": "6eeefda59821e437",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 120,
+    "y": 1000,
+    "wires": [
+      [
+        "bcf05363f3f69d18"
+      ]
+    ]
+  },
+  {
+    "id": "bcf05363f3f69d18",
+    "type": "change",
+    "z": "6eeefda59821e437",
+    "name": "home",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "home",
+        "tot": "str"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 290,
+    "y": 1000,
+    "wires": [
+      [
+        "80c05a3763475921"
+      ]
+    ]
+  },
+  {
+    "id": "a1143bb019d9d6f2",
+    "type": "change",
+    "z": "6eeefda59821e437",
+    "name": "arm",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "arm",
+        "tot": "str"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 290,
+    "y": 1060,
+    "wires": [
+      [
+        "80c05a3763475921"
+      ]
+    ]
+  },
+  {
+    "id": "3d99ba65a57060d0",
+    "type": "change",
+    "z": "6eeefda59821e437",
+    "name": "disarm",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "disarm",
+        "tot": "str"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 290,
+    "y": 1120,
+    "wires": [
+      [
+        "80c05a3763475921"
+      ]
+    ]
+  },
+  {
+    "id": "5b8ca8ae072404ea",
+    "type": "inject",
+    "z": "6eeefda59821e437",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 120,
+    "y": 1060,
+    "wires": [
+      [
+        "a1143bb019d9d6f2"
+      ]
+    ]
+  },
+  {
+    "id": "fbb50d1db7bdf73a",
+    "type": "inject",
+    "z": "6eeefda59821e437",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 120,
+    "y": 1120,
+    "wires": [
+      [
+        "3d99ba65a57060d0"
+      ]
+    ]
+  },
+  {
+    "id": "df565e0433b24184",
+    "type": "ring-config",
+    "name": "home",
+    "credentials": {}
+  }
+]

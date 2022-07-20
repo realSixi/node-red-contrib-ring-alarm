@@ -61,17 +61,22 @@ const init = (RED: NodeAPI) => {
 
                 api.getLocations().then(locations => {
                     locations.forEach(location => {
-                        location.getDevices().then();
 
                         let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
-                            if (deviceUpdate.deviceType === RingDeviceType.SecurityPanel && deviceUpdate.mode) {
-                                this.send({
-                                    topic: `ring/${location.id}/security-panel/${deviceUpdate.zid}/security-mode`,
-                                    payload: deviceUpdate,
-                                });
+                            if (deviceUpdate.deviceType === RingDeviceType.SecurityPanel) {
+                                location.getDevices().then(devices => {
+                                    let device = devices.find(d => d.deviceType === RingDeviceType.SecurityPanel);
+                                    this.send({
+                                        topic: `ring/${location.id}/security-panel/${deviceUpdate.zid}/security-mode`,
+                                        payload: {
+                                            ...device.data,
+                                        },
+                                    });
 
+                                }).catch(e => RED.log.error(e));
                             }
                         });
+
 
                         this.on('close', () => {
                             subscription.unsubscribe();
@@ -193,7 +198,7 @@ const init = (RED: NodeAPI) => {
         });
 
 
-        function RingSecurityCamera(this: nodeRed.Node, config: DefaultConfiguredNodeType & { imagetype: 'video' | 'photo' }) {
+        function RingSecurityCamera(this: nodeRed.Node, config: DefaultConfiguredNodeType & { imagetype: 'video' | 'photo', videoduration: number }) {
             RED.nodes.createNode(this, config);
 
             try {
@@ -220,7 +225,7 @@ const init = (RED: NodeAPI) => {
 
                                     const filename = `/tmp/ring-video-${(new Date().getTime())}.mp4`;
 
-                                    camera.recordToFile(filename, 10)
+                                    camera.recordToFile(filename, config.videoduration || 10)
                                         .then(record => {
                                             console.log('Record DONE!', record);
                                             let data = fs.readFileSync(filename);

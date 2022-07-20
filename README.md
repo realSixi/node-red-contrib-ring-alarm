@@ -21,21 +21,87 @@ This projects adds the following nodes to Node-RED
 Sends a message, if a device changes - either because it's `faulted` (= triggered) or because it's `tamperStatus` changed.
 
 *Example Message*
-```javascript
+```json
 {
-  "locationId": "a44a1234-66a9-4a25-b1ca-dbff7123456",
-  "adapterType": "zwave",
-  "catalogId": "3ec71234-735c-4a07-b718-44475812345",
-  "deviceType": "sensor.contact",
-  "lastCommTime": 1658095897290,
-  "lastUpdate": 1658095897342,
-  "zid": "0ef01234-91c2-4a43-ba2d-ebc5ad123456",
-  "faulted": true
+    "locationId": "a44aaaaa-66b9-4225-baaa-dbfc7aaaaaaa",
+        "adapterType": "zwave",
+        "adapterZid": "b226cccc-6ae1-4bbb-9bbb-6124cabbbbbb",
+        "batteryLevel": 100,
+        "batteryStatus": "full",
+        "catalogId": "3ec4dddd-725c-4957-bddd-414758aadddd",
+        "categoryId": 5,
+        "commStatus": "ok",
+        "commandTypes": {
+        "communication-poll": {
+            "requiresTrust": false
+        },
+        "led-indicator-sensor.cancel": {
+            "requiresTrust": true
+        },
+        "led-indicator-sensor.set": {
+            "requiresTrust": false
+        },
+        "reconfigure.start": {
+            "requiresTrust": false
+        },
+        "update-node-neighbors.start": {
+            "requiresTrust": false
+        }
+    },
+    "deviceFoundTime": 1657985780389,
+        "deviceType": "sensor.contact",
+        "fingerprint": "838.513.1025",
+        "firmwareUpdate": {
+        "eligibility": "eligible",
+            "state": "up-to-date"
+    },
+    "impulseTypes": {
+        "clear": {
+            "trusted": true
+        },
+        "comm.ping.received": {
+            "trusted": false
+        },
+        "fault": {
+            "trusted": true
+        },
+        "tampered": {
+            "trusted": true
+        },
+        "tampered-cleared": {
+            "trusted": true
+        }
+    },
+    "lastCommTime": 1658351029807,
+        "lastUpdate": 1658351029862,
+        "linkQuality": "ok",
+        "managerId": "zwave",
+        "manufacturerName": "Ring",
+        "name": "Main Entrance Contact Sensor",
+        "nextExpectedWakeup": 1658396974043,
+        "placement": "main-door",
+        "pollInterval": 43200,
+        "roomId": 1,
+        "serialNumber": "G2Q1L49188640XXX",
+        "setupByPluginStatus": "complete",
+        "setupByUserStatus": "unset",
+        "subCategoryId": 1,
+        "tags": [
+        "sleepy",
+        "scanned",
+        "kitted"
+    ],
+        "tamperStatus": "ok",
+        "zid": "0ef00000-9222-4e44-bbbb-ebc666665805",
+        "faulted": true,
+        "ledIndicatorMode": "fault"
 }
 ```
 
 ### Alarm Mode Listener
 Sends a message when the alarm mode changes. In the Ring.com app those states are `disarm` (inactive), `home` and `arm`. In the API the states are called `none` (=disarm), `some` (= home) and `all` (=arm).
+
+The message-format is the same as for the *Device Listener* node.
 
 ### Camera Motion
 
@@ -43,11 +109,9 @@ When the camera detects motion, this node will be triggered.
 
 ### Camera
 
-Can be configured to either take **photo** or a **video**.  
+Can be configured to either take **photo** or a **video**. If video mode is selected, you can also configure the duration of the video.
 
 The *Photo* message will contain the image as Base64-encoded String and as a buffer. The *Video* message contains only a Buffer.
-
-Currently videos have a length of 10s (will be configurable in the future).
 
 ### Alarm Status
 

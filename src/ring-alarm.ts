@@ -13,6 +13,7 @@ const init = (RED: NodeAPI) => {
         function RingConfigNode(this: RingConfigNodeType, config: RingConfigConfigType) {
             RED.nodes.createNode(this, config);
 
+
             const resetToken = () => {
                 this.context().set('token', undefined);
             };
@@ -33,7 +34,6 @@ const init = (RED: NodeAPI) => {
                     console.log('Refreshed Token', tokenUpdate);
                     updateToken(tokenUpdate.newRefreshToken);
                 });
-
 
                 this.on('close', () => {
                     subscription.unsubscribe();
@@ -149,21 +149,21 @@ const init = (RED: NodeAPI) => {
                     api.getLocations().then(locations => {
                         locations.forEach((location) => {
 
-                            location.getDevices().then(devices => {
-                            }).catch(e => RED.log.error(e));
-
                             let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
-                                if (deviceUpdate.faulted !== undefined || deviceUpdate.tamperStatus) {
-                                    this.send({
-                                        topic: `ring/${location.id}/device/${deviceUpdate.zid}`,
-                                        payload: {
-                                            locationId: location.locationId,
-                                            ...deviceUpdate,
-                                        },
-                                    });
-                                } else {
-                                    console.log('other device update', deviceUpdate);
-                                }
+                                location.getDevices().then(devices => {
+                                    let device = devices.find(d => d.zid === deviceUpdate.zid);
+                                    if (deviceUpdate.faulted !== undefined || deviceUpdate.tamperStatus) {
+                                        this.send({
+                                            topic: `ring/${location.id}/device/${deviceUpdate.zid}`,
+                                            payload: {
+                                                locationId: location.locationId,
+                                                ...device.data,
+                                            },
+                                        });
+                                    } else {
+                                    }
+                                }).catch(e => RED.log.error(e));
+
                             });
                             this.on('close', () => {
                                 subscription.unsubscribe();
@@ -199,7 +199,6 @@ const init = (RED: NodeAPI) => {
             try {
                 this.on('input', (msg, send, done) => {
 
-                    console.log('Camera Config', config);
 
                     let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
                     if (configNode && configNode.api) {

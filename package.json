@@ -9,6 +9,7 @@
   "license": "MIT",
   "keywords": [
     "node-red",
+    "ring",
     "ring alarm",
     "ring camera"
   ],

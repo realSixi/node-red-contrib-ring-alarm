@@ -87,10 +87,10 @@ Sends a message, if a device changes - either because it's `faulted` (= triggere
         "setupByUserStatus": "unset",
         "subCategoryId": 1,
         "tags": [
-        "sleepy",
-        "scanned",
-        "kitted"
-    ],
+            "sleepy",
+            "scanned",
+            "kitted"
+        ],
         "tamperStatus": "ok",
         "zid": "0ef00000-9222-4e44-bbbb-ebc666665805",
         "faulted": true,

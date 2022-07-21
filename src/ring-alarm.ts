@@ -13,7 +13,6 @@ const init = (RED: NodeAPI) => {
         function RingConfigNode(this: RingConfigNodeType, config: RingConfigConfigType) {
             RED.nodes.createNode(this, config);
 
-
             const resetToken = () => {
                 this.context().set('token', undefined);
             };
@@ -29,20 +28,35 @@ const init = (RED: NodeAPI) => {
             }
 
             if (getToken()) {
-                this.api = new RingApi({ refreshToken: getToken() });
-                let subscription = this.api.onRefreshTokenUpdated.subscribe(tokenUpdate => {
-                    console.log('Refreshed Token', tokenUpdate);
-                    updateToken(tokenUpdate.newRefreshToken);
-                });
+                try {
 
-                this.on('close', () => {
-                    subscription.unsubscribe();
-                    this.api.disconnect();
-                });
+                    let tmpApi = new RingApi({ refreshToken: getToken() });
+
+                    // make call to verify token / trigger refresh
+                    tmpApi.getProfile().then().catch(e => {
+                        RED.log.error(e);
+                    });
+
+
+                    let subscription = tmpApi.onRefreshTokenUpdated.subscribe(tokenUpdate => {
+                        updateToken(tokenUpdate.newRefreshToken);
+                        this.api = tmpApi;
+                        this.emit('ring-config-token-fetched');
+                    });
+
+
+                    this.on('close', () => {
+                        subscription.unsubscribe();
+                        this.api.disconnect();
+                    });
+                } catch (e) {
+                    RED.log.error(e);
+                }
             } else {
                 RED.log.error('No Token!');
             }
         }
+
 
         RED.nodes.registerType('ring-config', RingConfigNode, {
             credentials: {
@@ -56,46 +70,50 @@ const init = (RED: NodeAPI) => {
             RED.nodes.createNode(this, config);
 
             let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-            if (configNode && configNode.api) {
-                const api = configNode.api;
 
-                api.getLocations().then(locations => {
-                    locations.forEach(location => {
+            configNode.addListener('ring-config-token-fetched', () => {
+                    if (configNode && configNode.api) {
 
-                        let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
-                            if (deviceUpdate.deviceType === RingDeviceType.SecurityPanel) {
-                                location.getDevices().then(devices => {
-                                    let device = devices.find(d => d.deviceType === RingDeviceType.SecurityPanel);
-                                    this.send({
-                                        topic: `ring/${location.id}/security-panel/${deviceUpdate.zid}/security-mode`,
-                                        payload: {
-                                            ...device.data,
-                                        },
-                                    });
+                        const api = configNode.api;
 
-                                }).catch(e => RED.log.error(e));
-                            }
+                        api.getLocations().then(locations => {
+                            locations.forEach(location => {
+
+                                let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
+                                    if (deviceUpdate.deviceType === RingDeviceType.SecurityPanel) {
+                                        location.getDevices().then(devices => {
+                                            let device = devices.find(d => d.deviceType === RingDeviceType.SecurityPanel);
+                                            this.send({
+                                                topic: `ring/${location.id}/security-panel/${deviceUpdate.zid}/security-mode`,
+                                                payload: {
+                                                    ...device.data,
+                                                },
+                                            });
+
+                                        }).catch(e => RED.log.error(e));
+                                    }
+                                });
+
+
+                                this.on('close', () => {
+                                    subscription.unsubscribe();
+                                });
+                            });
+                            this.status({
+                                fill: 'green',
+                                text: 'connected',
+                            });
                         });
 
-
-                        this.on('close', () => {
-                            subscription.unsubscribe();
+                    } else {
+                        this.status({
+                            fill: 'red',
+                            text: 'no credentials',
                         });
-                    });
-                    this.status({
-                        fill: 'green',
-                        text: 'connected',
-                    });
-                });
-
-
-            } else {
-                this.status({
-                    fill: 'red',
-                    text: 'no credentials',
-                });
-            }
-        }
+                    }
+                },
+            );
+        };
 
         RED.nodes.registerType('Alarm Mode Listener', RingSecurityPanelMode);
 
@@ -104,40 +122,42 @@ const init = (RED: NodeAPI) => {
             RED.nodes.createNode(this, config);
 
             let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-            if (configNode && configNode.api) {
-                const api = configNode.api;
+            configNode.addListener('ring-config-token-fetched', () => {
+                if (configNode && configNode.api) {
+                    const api = configNode.api;
 
-                api.getLocations().then(locations => {
-                    locations.forEach(location => {
-                        location.cameras.forEach(cam => {
-                            let subscription = cam.onMotionDetected.subscribe(motion => {
-                                this.send({
-                                    topic: `ring/${location.id}/camera/${cam.id}/motion`,
-                                    payload: {
-                                        cameraData: cam.data,
-                                        motion: motion,
-                                    },
+                    api.getLocations().then(locations => {
+                        locations.forEach(location => {
+                            location.cameras.forEach(cam => {
+                                let subscription = cam.onMotionDetected.subscribe(motion => {
+                                    this.send({
+                                        topic: `ring/${location.id}/camera/${cam.id}/motion`,
+                                        payload: {
+                                            cameraData: cam.data,
+                                            motion: motion,
+                                        },
+                                    });
+                                });
+                                this.on('close', () => {
+                                    subscription.unsubscribe();
                                 });
                             });
-                            this.on('close', () => {
-                                subscription.unsubscribe();
-                            });
+                        });
+                        this.status({
+                            fill: 'green',
+                            text: 'connected',
                         });
                     });
+
+
+                } else {
                     this.status({
-                        fill: 'green',
-                        text: 'connected',
+                        fill: 'red',
+                        text: 'no credentials',
                     });
-                });
-
-
-            } else {
-                this.status({
-                    fill: 'red',
-                    text: 'no credentials',
-                });
-            }
-        }
+                }
+            });
+        };
 
         RED.nodes.registerType('Camera Motion', RingCameraMotion);
 
@@ -147,54 +167,55 @@ const init = (RED: NodeAPI) => {
 
 
             let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-            if (configNode && configNode.api) {
-                const api = configNode.api;
+            configNode.addListener('ring-config-token-fetched', () => {
+                if (configNode && configNode.api) {
+                    const api = configNode.api;
 
-                try {
-                    api.getLocations().then(locations => {
-                        locations.forEach((location) => {
+                    try {
+                        api.getLocations().then(locations => {
+                            locations.forEach((location) => {
 
-                            let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
-                                location.getDevices().then(devices => {
-                                    let device = devices.find(d => d.zid === deviceUpdate.zid);
-                                    if (deviceUpdate.faulted !== undefined || deviceUpdate.tamperStatus) {
-                                        this.send({
-                                            topic: `ring/${location.id}/device/${deviceUpdate.zid}`,
-                                            payload: {
-                                                locationId: location.locationId,
-                                                ...device.data,
-                                            },
-                                        });
-                                    } else {
-                                    }
-                                }).catch(e => RED.log.error(e));
+                                let subscription = location.onDeviceDataUpdate.subscribe(deviceUpdate => {
+                                    location.getDevices().then(devices => {
+                                        let device = devices.find(d => d.zid === deviceUpdate.zid);
+                                        if (deviceUpdate.faulted !== undefined || deviceUpdate.tamperStatus) {
+                                            this.send({
+                                                topic: `ring/${location.id}/device/${deviceUpdate.zid}`,
+                                                payload: {
+                                                    locationId: location.locationId,
+                                                    ...device.data,
+                                                },
+                                            });
+                                        } else {
+                                        }
+                                    }).catch(e => RED.log.error(e));
 
+                                });
+                                this.on('close', () => {
+                                    subscription.unsubscribe();
+                                });
                             });
-                            this.on('close', () => {
-                                subscription.unsubscribe();
+
+                            this.status({
+                                fill: 'green',
+                                text: 'connected',
                             });
                         });
-
+                    } catch (e) {
                         this.status({
-                            fill: 'green',
-                            text: 'connected',
+                            fill: 'red',
+                            text: `Error: ${e.message}`,
                         });
-                    });
-                } catch (e) {
+                    }
+
+                } else {
                     this.status({
                         fill: 'red',
-                        text: `Error: ${e.message}`,
+                        text: 'no credentials',
                     });
                 }
 
-            } else {
-                this.status({
-                    fill: 'red',
-                    text: 'no credentials',
-                });
-            }
-
-
+            });
         });
 
 
@@ -206,96 +227,98 @@ const init = (RED: NodeAPI) => {
 
 
                     let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-                    if (configNode && configNode.api) {
-                        const api = configNode.api;
+                    configNode.addListener('ring-config-token-fetched', () => {
+                        if (configNode && configNode.api) {
+                            const api = configNode.api;
 
-                        api.getCameras().then(cameras => {
-                            cameras.forEach(camera => {
-                                // camera.onMotionDetected.subscribe(msg => {
-                                //     console.log('Cam motion detected');
-                                // });
+                            api.getCameras().then(cameras => {
+                                cameras.forEach(camera => {
+                                    // camera.onMotionDetected.subscribe(msg => {
+                                    //     console.log('Cam motion detected');
+                                    // });
 
-                                if (config.imagetype === 'video') {
+                                    if (config.imagetype === 'video') {
 
-                                    this.status({
-                                        text: 'recording video',
-                                        fill: 'green',
-                                    });
+                                        this.status({
+                                            text: 'recording video',
+                                            fill: 'green',
+                                        });
 
 
-                                    const filename = `/tmp/ring-video-${(new Date().getTime())}.mp4`;
+                                        const filename = `/tmp/ring-video-${(new Date().getTime())}.mp4`;
 
-                                    camera.recordToFile(filename, config.videoduration || 10)
-                                        .then(record => {
-                                            console.log('Record DONE!', record);
-                                            let data = fs.readFileSync(filename);
+                                        camera.recordToFile(filename, config.videoduration || 10)
+                                            .then(record => {
+                                                console.log('Record DONE!', record);
+                                                let data = fs.readFileSync(filename);
+                                                send({
+                                                    payload: {
+                                                        type: 'video',
+                                                        buffer: data,
+                                                    },
+                                                });
+
+                                                fs.unlink(filename, () => {
+                                                    console.log('UNlink done!', filename);
+                                                });
+
+                                                this.status({
+                                                    text: 'ready',
+                                                    fill: 'green',
+                                                });
+
+                                                done();
+
+                                            }).catch(e => {
+                                            this.status({
+                                                text: e.message,
+                                                fill: 'red',
+                                            });
+                                            done();
+                                        });
+                                    } else if (config.imagetype === 'photo') {
+                                        this.status({
+                                            text: 'taking snapshot',
+                                            fill: 'green',
+                                        });
+
+                                        camera.getSnapshot().then(buffer => {
+                                            let base64 = buffer.toString('base64');
+
                                             send({
+                                                topic: 'image',
                                                 payload: {
-                                                    type: 'video',
-                                                    buffer: data,
+                                                    type: 'photo',
+                                                    base64: base64,
+                                                    buffer: buffer,
                                                 },
-                                            });
 
-                                            fs.unlink(filename, () => {
-                                                console.log('UNlink done!', filename);
                                             });
-
                                             this.status({
                                                 text: 'ready',
                                                 fill: 'green',
                                             });
-
                                             done();
-
                                         }).catch(e => {
+                                            this.status({
+                                                text: e.message,
+                                                fill: 'red',
+                                            });
+                                            done();
+                                        });
+                                    } else {
+                                        console.log('type not recognized -> aborting');
                                         this.status({
-                                            text: e.message,
-                                            fill: 'red',
+                                            text: 'unknown type',
+                                            fill: 'yellow',
                                         });
                                         done();
-                                    });
-                                } else if (config.imagetype === 'photo') {
-                                    this.status({
-                                        text: 'taking snapshot',
-                                        fill: 'green',
-                                    });
-
-                                    camera.getSnapshot().then(buffer => {
-                                        let base64 = buffer.toString('base64');
-
-                                        send({
-                                            topic: 'image',
-                                            payload: {
-                                                type: 'photo',
-                                                base64: base64,
-                                                buffer: buffer,
-                                            },
-
-                                        });
-                                        this.status({
-                                            text: 'ready',
-                                            fill: 'green',
-                                        });
-                                        done();
-                                    }).catch(e => {
-                                        this.status({
-                                            text: e.message,
-                                            fill: 'red',
-                                        });
-                                        done();
-                                    });
-                                } else {
-                                    console.log('type not recognized -> aborting');
-                                    this.status({
-                                        text: 'unknown type',
-                                        fill: 'yellow',
-                                    });
-                                    done();
-                                }
+                                    }
+                                });
                             });
-                        });
 
-                    }
+                        }
+                    });
                 });
             } catch (e) {
                 console.log(e);
@@ -311,117 +334,119 @@ const init = (RED: NodeAPI) => {
             try {
                 console.log('ArarmModeConfig', config);
                 let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-                if (configNode && configNode.api) {
-                    const api = configNode.api;
+                configNode.addListener('ring-config-token-fetched', () => {
+                    if (configNode && configNode.api) {
+                        const api = configNode.api;
 
-                    let l = api.getLocations().then(locations => {
-                        let location = locations.find(l => l.locationId === config.locationId);
-                        if (location) {
+                        let l = api.getLocations().then(locations => {
+                            let location = locations.find(l => l.locationId === config.locationId);
+                            if (location) {
 
-                            location.getAlarmMode().then(mode => {
-                                let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
-                                this.status({
-                                    fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
-                                    text: `${location.name}: ${alarmMode}`,
-                                });
-                            }).catch(e => {
-                                RED.log.error(e);
-                            });
-                            let subscription = location.onDeviceDataUpdate.subscribe(deviceData => {
-                                if (deviceData.deviceType === 'security-panel') {
-                                    location.getAlarmMode().then(mode => {
-                                        let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
-                                        this.status({
-                                            fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
-                                            text: `${location.name}: ${alarmMode}`,
-                                        });
-                                    }).catch(e => {
-                                        RED.log.error(e);
+                                location.getAlarmMode().then(mode => {
+                                    let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
+                                    this.status({
+                                        fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
+                                        text: `${location.name}: ${alarmMode}`,
                                     });
-                                }
-                            });
-
-                            this.on('close', () => {
-                                subscription.unsubscribe();
-                            });
-
-
-                        } else {
-                            this.status({
-                                fill: 'red',
-                                text: `Location not found`,
-                            });
-
-                            let locationIds = locations.map(location => `${location.id} (${location.name})`).join(', ');
-
-                            RED.log.error(`Select one location to filter: ${locationIds}`);
-                        }
-                    }).catch(e => RED.log.error(e));
-
-                    this.on('input', (msg, send, done) => {
-
-                            console.log('RingSetAlarmMode Config', config);
-                            let payload = msg.payload as string;
-                            if (!payload) {
-                                RED.log.error(`Invalid Mode: ${msg.payload}`);
-                            }
-
-                            api.getLocations()
-                                .then(locations => locations.find(location => location.id === config.locationId))
-                                .then(location => {
-                                    location.getDevices()
-                                        .then(devices => {
-                                            return config.bypass && devices.filter(d => d.data.faulted)
-                                                .map(d => d.data.zid);
-                                        })
-                                        .then(devicesToIgnore => {
-                                            console.log('devicesToIgnore', devicesToIgnore);
-
-                                            switch (payload) {
-                                                case 'some':
-                                                case 'home': {
-                                                    location.armHome(devicesToIgnore).then(res => {
-                                                        done();
-                                                    }).catch(e => {
-                                                        RED.log.error(e);
-                                                    });
-                                                    break;
-                                                }
-                                                case 'all':
-                                                case 'arm': {
-                                                    location.armAway(devicesToIgnore).then(res => {
-                                                        done();
-                                                    }).catch(e => {
-                                                        RED.log.error(e);
-                                                    });
-                                                    break;
-                                                }
-                                                case 'none':
-                                                case 'disarm' : {
-                                                    location.disarm().then(res => {
-                                                        done();
-                                                    }).catch(e => {
-                                                        RED.log.error(e);
-                                                    });
-                                                    break;
-                                                }
-                                                default: {
-                                                    RED.log.error(`Invalid Mode: ${msg.payload}`);
-                                                    break;
-                                                }
-                                            }
+                                }).catch(e => {
+                                    RED.log.error(e);
+                                });
+                                let subscription = location.onDeviceDataUpdate.subscribe(deviceData => {
+                                    if (deviceData.deviceType === 'security-panel') {
+                                        location.getAlarmMode().then(mode => {
+                                            let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
+                                            this.status({
+                                                fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
+                                                text: `${location.name}: ${alarmMode}`,
+                                            });
+                                        }).catch(e => {
+                                            RED.log.error(e);
                                         });
+                                    }
+                                });
 
-                                })
-                                .catch(e => RED.log.error(e));
-                        },
-                    );
-                } else {
-                    this.status({
-                        fill: 'red',
-                        text: 'no credentials',
-                    });
-                }
+                                this.on('close', () => {
+                                    subscription.unsubscribe();
+                                });
+
+
+                            } else {
+                                this.status({
+                                    fill: 'red',
+                                    text: `Location not found`,
+                                });
+
+                                let locationIds = locations.map(location => `${location.id} (${location.name})`).join(', ');
+
+                                RED.log.error(`Select one location to filter: ${locationIds}`);
+                            }
+                        }).catch(e => RED.log.error(e));
+
+                        this.on('input', (msg, send, done) => {
+
+                                console.log('RingSetAlarmMode Config', config);
+                                let payload = msg.payload as string;
+                                if (!payload) {
+                                    RED.log.error(`Invalid Mode: ${msg.payload}`);
+                                }
+
+                                api.getLocations()
+                                    .then(locations => locations.find(location => location.id === config.locationId))
+                                    .then(location => {
+                                        location.getDevices()
+                                            .then(devices => {
+                                                return config.bypass && devices.filter(d => d.data.faulted)
+                                                    .map(d => d.data.zid);
+                                            })
+                                            .then(devicesToIgnore => {
+                                                console.log('devicesToIgnore', devicesToIgnore);
+
+                                                switch (payload) {
+                                                    case 'some':
+                                                    case 'home': {
+                                                        location.armHome(devicesToIgnore).then(res => {
+                                                            done();
+                                                        }).catch(e => {
+                                                            RED.log.error(e);
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 'all':
+                                                    case 'arm': {
+                                                        location.armAway(devicesToIgnore).then(res => {
+                                                            done();
+                                                        }).catch(e => {
+                                                            RED.log.error(e);
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 'none':
+                                                    case 'disarm' : {
+                                                        location.disarm().then(res => {
+                                                            done();
+                                                        }).catch(e => {
+                                                            RED.log.error(e);
+                                                        });
+                                                        break;
+                                                    }
+                                                    default: {
+                                                        RED.log.error(`Invalid Mode: ${msg.payload}`);
+                                                        break;
+                                                    }
+                                                }
+                                            });
+
+                                    })
+                                    .catch(e => RED.log.error(e));
+                            },
+                        );
+                    } else {
+                        this.status({
+                            fill: 'red',
+                            text: 'no credentials',
+                        });
+                    }
+                });
             } catch (e) {
                 this.status({
                     fill: 'red',
@@ -438,40 +463,42 @@ const init = (RED: NodeAPI) => {
             try {
                 console.log('ArarmModeConfig', config);
                 let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-                if (configNode && configNode.api) {
-                    const api = configNode.api;
+                configNode.addListener('ring-config-token-fetched', () => {
+                    if (configNode && configNode.api) {
+                        const api = configNode.api;
 
-                    api.getLocations().then(locations => locations.forEach(location => {
-                        location.getDevices().then(devices => devices.find(d => d.deviceType === 'security-panel')
-                            .onData.subscribe(deviceData => {
-                                if (deviceData.alarmInfo) {
+                        api.getLocations().then(locations => locations.forEach(location => {
+                            location.getDevices().then(devices => devices.find(d => d.deviceType === 'security-panel')
+                                .onData.subscribe(deviceData => {
+                                    if (deviceData.alarmInfo) {
 
-                                    let triggeredDevices = devices.filter(device => deviceData.alarmInfo.faultedDevices.includes(device.id))
-                                        .map(device => device.data);
+                                        let triggeredDevices = devices.filter(device => deviceData.alarmInfo.faultedDevices.includes(device.id))
+                                            .map(device => device.data);
 
-                                    this.send({
-                                        payload: {
-                                            locationId: location.locationId,
-                                            locationName: location.name,
-                                            ...deviceData.alarmInfo,
-                                            faultedDevices: triggeredDevices,
-                                        },
+                                        this.send({
+                                            payload: {
+                                                locationId: location.locationId,
+                                                locationName: location.name,
+                                                ...deviceData.alarmInfo,
+                                                faultedDevices: triggeredDevices,
+                                            },
+                                        });
+                                    }
+                                }))
+                                .then(subscription => {
+                                    this.on('close', () => {
+                                        subscription.unsubscribe();
                                     });
-                                }
-                            }))
-                            .then(subscription => {
-                                this.on('close', () => {
-                                    subscription.unsubscribe();
                                 });
+
+                            this.status({
+                                fill: 'green',
+                                text: 'connected',
                             });
+                        }));
 
-                        this.status({
-                            fill: 'green',
-                            text: 'connected',
-                        });
-                    }));
-
-                }
+                    }
+                });
             } catch (e) {
                 this.status({
                     fill: 'red',

@@ -1,6 +1,6 @@
 {
   "name": "@realsixi/node-red-contrib-ring-alarm",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/realSixi/node-red-contrib-ring-alarm.git"

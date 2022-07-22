@@ -35,11 +35,13 @@ const init = (RED: NodeAPI) => {
                     // make call to verify token / trigger refresh
                     tmpApi.getProfile().then().catch(e => {
                         RED.log.error(e);
+                        resetToken();
                     });
 
 
                     let subscription = tmpApi.onRefreshTokenUpdated.subscribe(tokenUpdate => {
                         updateToken(tokenUpdate.newRefreshToken);
+                        // console.log(tokenUpdate)
                         this.api = tmpApi;
                         this.emit('ring-config-token-fetched');
                     });

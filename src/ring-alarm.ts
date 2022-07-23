@@ -13,6 +13,8 @@ const init = (RED: NodeAPI) => {
         function RingConfigNode(this: RingConfigNodeType, config: RingConfigConfigType) {
             RED.nodes.createNode(this, config);
 
+            this.setMaxListeners(0);
+
             const resetToken = () => {
                 this.context().set('token', undefined);
             };
@@ -41,9 +43,10 @@ const init = (RED: NodeAPI) => {
 
                     let subscription = tmpApi.onRefreshTokenUpdated.subscribe(tokenUpdate => {
                         updateToken(tokenUpdate.newRefreshToken);
-                        // console.log(tokenUpdate)
+                        console.log(tokenUpdate);
                         this.api = tmpApi;
                         this.emit('ring-config-token-fetched');
+
                     });
 
 
@@ -73,7 +76,7 @@ const init = (RED: NodeAPI) => {
 
             let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
 
-            configNode.addListener('ring-config-token-fetched', () => {
+            configNode.once('ring-config-token-fetched', () => {
                     if (configNode && configNode.api) {
 
                         const api = configNode.api;
@@ -124,7 +127,7 @@ const init = (RED: NodeAPI) => {
             RED.nodes.createNode(this, config);
 
             let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-            configNode.addListener('ring-config-token-fetched', () => {
+            configNode.once('ring-config-token-fetched', () => {
                 if (configNode && configNode.api) {
                     const api = configNode.api;
 
@@ -169,7 +172,7 @@ const init = (RED: NodeAPI) => {
 
 
             let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-            configNode.addListener('ring-config-token-fetched', () => {
+            configNode.once('ring-config-token-fetched', () => {
                 if (configNode && configNode.api) {
                     const api = configNode.api;
 
@@ -223,109 +226,121 @@ const init = (RED: NodeAPI) => {
 
         function RingSecurityCamera(this: nodeRed.Node, config: DefaultConfiguredNodeType & { imagetype: 'video' | 'photo', videoduration: number }) {
             RED.nodes.createNode(this, config);
+            this.status({
+                text: 'waiting for token',
+                fill: 'yellow',
+            });
 
-            try {
-                this.on('input', (msg, send, done) => {
-
-
-                    let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-                    configNode.addListener('ring-config-token-fetched', () => {
-                        if (configNode && configNode.api) {
-                            const api = configNode.api;
-
-                            api.getCameras().then(cameras => {
-                                cameras.forEach(camera => {
-                                    // camera.onMotionDetected.subscribe(msg => {
-                                    //     console.log('Cam motion detected');
-                                    // });
-
-                                    if (config.imagetype === 'video') {
-
-                                        this.status({
-                                            text: 'recording video',
-                                            fill: 'green',
-                                        });
+            let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
+            configNode.once('ring-config-token-fetched', () => {
+                    this.status({
+                        text: 'ready',
+                        fill: 'green',
+                    });
 
 
-                                        const filename = `/tmp/ring-video-${(new Date().getTime())}.mp4`;
+                    try {
+                        this.on('input', (msg, send, done) => {
 
-                                        camera.recordToFile(filename, config.videoduration || 10)
-                                            .then(record => {
-                                                console.log('Record DONE!', record);
-                                                let data = fs.readFileSync(filename);
+
+                            if (configNode && configNode.api) {
+                                const api = configNode.api;
+
+                                api.getCameras().then(cameras => {
+                                    cameras.forEach(camera => {
+                                        // camera.onMotionDetected.subscribe(msg => {
+                                        //     console.log('Cam motion detected');
+                                        // });
+
+                                        if (config.imagetype === 'video') {
+
+                                            this.status({
+                                                text: 'recording video',
+                                                fill: 'green',
+                                            });
+
+
+                                            const filename = `/tmp/ring-video-${(new Date().getTime())}.mp4`;
+
+                                            camera.recordToFile(filename, config.videoduration || 10)
+                                                .then(record => {
+                                                    console.log('Record DONE!', record);
+                                                    let data = fs.readFileSync(filename);
+                                                    send({
+                                                        payload: {
+                                                            type: 'video',
+                                                            buffer: data,
+                                                        },
+                                                    });
+
+                                                    fs.unlink(filename, () => {
+                                                        console.log('UNlink done!', filename);
+                                                    });
+
+                                                    this.status({
+                                                        text: 'ready',
+                                                        fill: 'green',
+                                                    });
+
+                                                    done();
+
+                                                }).catch(e => {
+                                                this.status({
+                                                    text: e.message,
+                                                    fill: 'red',
+                                                });
+                                                done();
+                                            });
+                                        } else if (config.imagetype === 'photo') {
+                                            this.status({
+                                                text: 'taking snapshot',
+                                                fill: 'green',
+                                            });
+
+                                            camera.getSnapshot().then(buffer => {
+                                                let base64 = buffer.toString('base64');
+
                                                 send({
+                                                    topic: 'image',
                                                     payload: {
-                                                        type: 'video',
-                                                        buffer: data,
+                                                        type: 'photo',
+                                                        base64: base64,
+                                                        buffer: buffer,
                                                     },
-                                                });
 
-                                                fs.unlink(filename, () => {
-                                                    console.log('UNlink done!', filename);
                                                 });
-
                                                 this.status({
                                                     text: 'ready',
                                                     fill: 'green',
                                                 });
-
                                                 done();
-
                                             }).catch(e => {
+                                                this.status({
+                                                    text: e.message,
+                                                    fill: 'red',
+                                                });
+                                                done();
+                                            });
+                                        } else {
+                                            console.log('type not recognized -> aborting');
                                             this.status({
-                                                text: e.message,
-                                                fill: 'red',
+                                                text: 'unknown type',
+                                                fill: 'yellow',
                                             });
                                             done();
-                                        });
-                                    } else if (config.imagetype === 'photo') {
-                                        this.status({
-                                            text: 'taking snapshot',
-                                            fill: 'green',
-                                        });
-
-                                        camera.getSnapshot().then(buffer => {
-                                            let base64 = buffer.toString('base64');
-
-                                            send({
-                                                topic: 'image',
-                                                payload: {
-                                                    type: 'photo',
-                                                    base64: base64,
-                                                    buffer: buffer,
-                                                },
-
-                                            });
-                                            this.status({
-                                                text: 'ready',
-                                                fill: 'green',
-                                            });
-                                            done();
-                                        }).catch(e => {
-                                            this.status({
-                                                text: e.message,
-                                                fill: 'red',
-                                            });
-                                            done();
-                                        });
-                                    } else {
-                                        console.log('type not recognized -> aborting');
-                                        this.status({
-                                            text: 'unknown type',
-                                            fill: 'yellow',
-                                        });
-                                        done();
-                                    }
+                                        }
+                                    });
                                 });
-                            });
 
-                        }
-                    });
-                });
-            } catch (e) {
-                console.log(e);
-            }
-        }
+                            }
+
+                        });
+                    } catch (e) {
+                        console.log(e);
+                    }
+                },
+            );
+        };
 
         RED.nodes.registerType('Camera', RingSecurityCamera);
 
@@ -336,7 +351,7 @@ const init = (RED: NodeAPI) => {
             try {
                 console.log('ArarmModeConfig', config);
                 let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-                configNode.addListener('ring-config-token-fetched', () => {
+                configNode.once('ring-config-token-fetched', () => {
                     if (configNode && configNode.api) {
                         const api = configNode.api;
 
@@ -465,7 +480,7 @@ const init = (RED: NodeAPI) => {
             try {
                 console.log('ArarmModeConfig', config);
                 let configNode: RingConfigNodeType = RED.nodes.getNode(config.config) as RingConfigNodeType;
-                configNode.addListener('ring-config-token-fetched', () => {
+                configNode.once('ring-config-token-fetched', () => {
                     if (configNode && configNode.api) {
                         const api = configNode.api;
 

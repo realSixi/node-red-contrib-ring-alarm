@@ -359,24 +359,37 @@ const init = (RED: NodeAPI) => {
                             let location = locations.find(l => l.locationId === config.locationId);
                             if (location) {
 
-                                location.getAlarmMode().then(mode => {
-                                    let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
-                                    this.status({
-                                        fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
-                                        text: `${location.name}: ${alarmMode}`,
-                                    });
-                                }).catch(e => {
-                                    RED.log.error(e);
-                                });
+                                location.getAlarmMode()
+                                    .catch(e => location.getLocationMode())
+                                    .then((mode) => {
+                                        let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
+                                        this.status({
+                                            fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
+                                            text: `${location.name}: ${alarmMode}`,
+                                        });
+                                    })
+                                    .catch(e => RED.log.error(e));
+
+                                // location.getAlarmMode().then(mode => {
+                                //     let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
+                                //     this.status({
+                                //         fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
+                                //         text: `${location.name}: ${alarmMode}`,
+                                //     });
+                                // }).catch(e => {
+                                //     RED.log.error(e);
+                                // });
                                 let subscription = location.onDeviceDataUpdate.subscribe(deviceData => {
                                     if (deviceData.deviceType === 'security-panel') {
-                                        location.getAlarmMode().then(mode => {
-                                            let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
-                                            this.status({
-                                                fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
-                                                text: `${location.name}: ${alarmMode}`,
-                                            });
-                                        }).catch(e => {
+                                        location.getAlarmMode()
+                                            .catch(e => location.getLocationMode())
+                                            .then(mode => {
+                                                let alarmMode = mode === 'all' ? 'arm' : mode === 'some' ? 'home' : 'disarm';
+                                                this.status({
+                                                    fill: alarmMode === 'disarm' ? 'grey' : alarmMode === 'home' ? 'yellow' : 'red',
+                                                    text: `${location.name}: ${alarmMode}`,
+                                                });
+                                            }).catch(e => {
                                             RED.log.error(e);
                                         });
                                     }
@@ -418,10 +431,16 @@ const init = (RED: NodeAPI) => {
                                             .then(devicesToIgnore => {
                                                 console.log('devicesToIgnore', devicesToIgnore);
 
+
                                                 switch (payload) {
                                                     case 'some':
                                                     case 'home': {
                                                         location.armHome(devicesToIgnore).then(res => {
+                                                            done();
+                                                        }).catch(e => {
+                                                            RED.log.error(e);
+                                                            return location.setLocationMode('home');
+                                                        }).then(res => {
                                                             done();
                                                         }).catch(e => {
                                                             RED.log.error(e);
@@ -434,12 +453,22 @@ const init = (RED: NodeAPI) => {
                                                             done();
                                                         }).catch(e => {
                                                             RED.log.error(e);
+                                                            return location.setLocationMode('away');
+                                                        }).then(res => {
+                                                            done();
+                                                        }).catch(e => {
+                                                            RED.log.error(e);
                                                         });
                                                         break;
                                                     }
                                                     case 'none':
                                                     case 'disarm' : {
                                                         location.disarm().then(res => {
+                                                            done();
+                                                        }).catch(e => {
+                                                            RED.log.error(e);
+                                                            return location.setLocationMode('disarmed');
+                                                        }).then(res => {
                                                             done();
                                                         }).catch(e => {
                                                             RED.log.error(e);
